@@ -4,15 +4,15 @@
 CMobileNetSSD::CMobileNetSSD() : COcvDnnProcess()
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>();
-    addOutput(std::make_shared<CGraphicsProcessOutput>());
-    addOutput(std::make_shared<CMeasureProcessIO>());
+    addOutput(std::make_shared<CGraphicsOutput>());
+    addOutput(std::make_shared<CMeasureIO>());
 }
 
 CMobileNetSSD::CMobileNetSSD(const std::string &name, const std::shared_ptr<CMobileNetSSDParam> &pParam): COcvDnnProcess(name)
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>(*pParam);
-    addOutput(std::make_shared<CGraphicsProcessOutput>());
-    addOutput(std::make_shared<CMeasureProcessIO>());
+    addOutput(std::make_shared<CGraphicsOutput>());
+    addOutput(std::make_shared<CMeasureIO>());
 }
 
 size_t CMobileNetSSD::getProgressSteps()
@@ -38,7 +38,7 @@ cv::Scalar CMobileNetSSD::getNetworkInputMean() const
 void CMobileNetSSD::run()
 {
     beginTaskRun();
-    auto pInput = std::dynamic_pointer_cast<CImageProcessIO>(getInput(0));
+    auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     auto pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(m_pParam);
 
     if(pInput == nullptr || pParam == nullptr)
@@ -105,16 +105,16 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
     // detections and an every detection is a vector of values
     // [batchId, classId, confidence, left, top, right, bottom]
     auto pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(m_pParam);
-    auto pInput = std::dynamic_pointer_cast<CImageProcessIO>(getInput(0));
+    auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     CMat imgSrc = pInput->getImage();
 
     //Graphics output
-    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsProcessOutput>(getOutput(1));
+    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsOutput>(getOutput(1));
     pGraphicsOutput->setNewLayer(getName());
     pGraphicsOutput->setImageIndex(0);
 
     //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureProcessIO>(getOutput(2));
+    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureIO>(getOutput(2));
     pMeasureOutput->clearData();
 
     for(int i=0; i<dnnOutput.size[2]; i++)

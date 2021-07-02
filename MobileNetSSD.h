@@ -64,7 +64,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSD: public COcvDnnProcess
 //--------------------------------//
 //----- CMobileNetSSDFactory -----//
 //--------------------------------//
-class MOBILENETSSDSHARED_EXPORT CMobileNetSSDFactory : public CProcessFactory
+class MOBILENETSSDSHARED_EXPORT CMobileNetSSDFactory : public CTaskFactory
 {
     public:
 
@@ -92,7 +92,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDFactory : public CProcessFactory
             m_info.m_keywords = "deep,learning,detection,caffe,embedded";
         }
 
-        virtual ProtocolTaskPtr create(const ProtocolTaskParamPtr& pParam) override
+        virtual WorkflowTaskPtr create(const WorkflowTaskParamPtr& pParam) override
         {
             auto paramPtr = std::dynamic_pointer_cast<CMobileNetSSDParam>(pParam);
             if(paramPtr != nullptr)
@@ -100,7 +100,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDFactory : public CProcessFactory
             else
                 return create();
         }
-        virtual ProtocolTaskPtr create() override
+        virtual WorkflowTaskPtr create() override
         {
             auto paramPtr = std::make_shared<CMobileNetSSDParam>();
             assert(paramPtr != nullptr);
@@ -119,7 +119,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDWidget: public COcvWidgetDnnCore
         {
             init();
         }
-        CMobileNetSSDWidget(ProtocolTaskParamPtr pParam, QWidget *parent = Q_NULLPTR): COcvWidgetDnnCore(parent)
+        CMobileNetSSDWidget(WorkflowTaskParamPtr pParam, QWidget *parent = Q_NULLPTR): COcvWidgetDnnCore(parent)
         {
             m_pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(pParam);
             init();
@@ -170,7 +170,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDWidgetFactory : public CWidgetFacto
             m_name = QObject::tr("MobileNet SSD").toStdString();
         }
 
-        virtual ProtocolTaskWidgetPtr   create(ProtocolTaskParamPtr pParam)
+        virtual WorkflowTaskWidgetPtr   create(WorkflowTaskParamPtr pParam)
         {
             return std::make_shared<CMobileNetSSDWidget>(pParam);
         }
@@ -187,7 +187,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDInterface : public QObject, public 
 
     public:
 
-        virtual std::shared_ptr<CProcessFactory> getProcessFactory()
+        virtual std::shared_ptr<CTaskFactory> getProcessFactory()
         {
             return std::make_shared<CMobileNetSSDFactory>();
         }
