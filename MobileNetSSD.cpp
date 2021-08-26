@@ -5,14 +5,14 @@ CMobileNetSSD::CMobileNetSSD() : COcvDnnProcess()
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>();
     addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CMeasureIO>());
+    addOutput(std::make_shared<CBlobMeasureIO>());
 }
 
 CMobileNetSSD::CMobileNetSSD(const std::string &name, const std::shared_ptr<CMobileNetSSDParam> &pParam): COcvDnnProcess(name)
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>(*pParam);
     addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CMeasureIO>());
+    addOutput(std::make_shared<CBlobMeasureIO>());
 }
 
 size_t CMobileNetSSD::getProgressSteps()
@@ -114,7 +114,7 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
     pGraphicsOutput->setImageIndex(0);
 
     //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureIO>(getOutput(2));
+    auto pMeasureOutput = std::dynamic_pointer_cast<CBlobMeasureIO>(getOutput(2));
     pMeasureOutput->clearData();
 
     for(int i=0; i<dnnOutput.size[2]; i++)
