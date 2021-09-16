@@ -140,13 +140,15 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
             float width = right - left + 1;
             float height = bottom - top + 1;
 
-            //Create rectangle graphics of bbox
-            auto graphicsBox = pGraphicsOutput->addRectangle(left, top, width, height);
-
             //Retrieve class label
             std::string className = classId < m_classNames.size() ? m_classNames[classId] : "unknown " + std::to_string(classId);
             std::string label = className + " : " + std::to_string(confidence);
             pGraphicsOutput->addText(label, left + 5, top + 5);
+
+            //Create rectangle graphics of bbox
+            CGraphicsRectProperty prop;
+            prop.m_category = className;
+            auto graphicsBox = pGraphicsOutput->addRectangle(left, top, width, height, prop);
 
             //Store values to be shown in results table
             std::vector<CObjectMeasure> results;
