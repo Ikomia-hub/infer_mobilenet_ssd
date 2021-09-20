@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 QT += core gui widgets sql
-TARGET = MobileNetSSD
+TARGET = infer_mobilenet_ssd
 
 win32: DESTDIR = $$(USERPROFILE)/Ikomia/Plugins/C++/$$TARGET
 unix: DESTDIR = $$(HOME)/Ikomia/Plugins/C++/$$TARGET
