@@ -22,7 +22,15 @@ size_t CMobileNetSSD::getProgressSteps()
 
 int CMobileNetSSD::getNetworkInputSize() const
 {
-    return 300;
+    int size = 416;
+
+    // Trick to overcome OpenCV issue around CUDA context and multithreading
+    // https://github.com/opencv/opencv/issues/20566
+    auto pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(m_pParam);
+    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
+        size = size + (m_sign * 32);
+
+    return size;
 }
 
 double CMobileNetSSD::getNetworkInputScaleFactor() const
@@ -95,6 +103,14 @@ void CMobileNetSSD::run()
     emit m_signalHandler->doProgress();
     manageOutput(netOutputs[0]);
     emit m_signalHandler->doProgress();
+
+    // Trick to overcome OpenCV issue around CUDA context and multithreading
+    // https://github.com/opencv/opencv/issues/20566
+    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
+    {
+        m_sign *= -1;
+        m_bNewInput = false;
+    }
 }
 
 void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
