@@ -82,6 +82,8 @@ void CMobileNetSSD::run()
                 throw CException(CoreExCode::INVALID_PARAMETER, "Failed to load network", __func__, __FILE__, __LINE__);
 
             pParam->m_bUpdate = false;
+            readClassNames();
+            generateColors();
         }
 
         int size = getNetworkInputSize();
@@ -98,7 +100,6 @@ void CMobileNetSSD::run()
         throw CException(CoreExCode::INVALID_PARAMETER, e.what(), __func__, __FILE__, __LINE__);
     }
 
-    readClassNames();
     endTaskRun();
     emit m_signalHandler->doProgress();
     manageOutput(netOutputs[0]);
@@ -159,12 +160,16 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
             //Retrieve class label
             std::string className = classId < m_classNames.size() ? m_classNames[classId] : "unknown " + std::to_string(classId);
             std::string label = className + " : " + std::to_string(confidence);
-            pGraphicsOutput->addText(label, left + 5, top + 5);
+            CGraphicsTextProperty textProperty;
+            textProperty.m_color = m_colors[classId];
+            textProperty.m_fontSize = 8;
+            pGraphicsOutput->addText(label, left + 5, top + 5, textProperty);
 
             //Create rectangle graphics of bbox
-            CGraphicsRectProperty prop;
-            prop.m_category = className;
-            auto graphicsBox = pGraphicsOutput->addRectangle(left, top, width, height, prop);
+            CGraphicsRectProperty rectProperty;
+            rectProperty.m_category = className;
+            rectProperty.m_penColor = m_colors[classId];
+            auto graphicsBox = pGraphicsOutput->addRectangle(left, top, width, height, rectProperty);
 
             //Store values to be shown in results table
             std::vector<CObjectMeasure> results;
@@ -172,5 +177,17 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
             results.emplace_back(CObjectMeasure(CMeasure::Id::BBOX, {left, top, width, height}, graphicsBox->getId(), className));
             pMeasureOutput->addObjectMeasures(results);
         }
+    }
+}
+
+void CMobileNetSSD::generateColors()
+{
+    //Random colors
+    for(size_t i=0; i<m_classNames.size(); ++i)
+    {
+        m_colors.push_back({ (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
+                             (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
+                             (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
+                           });
     }
 }
