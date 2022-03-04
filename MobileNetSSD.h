@@ -86,7 +86,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDFactory : public CTaskFactory
                                                "We then demonstrate the effectiveness of MobileNets across a wide range of applications and use cases including object detection, "
                                                "finegrain classification, face attributes and large scale geo-localization.").toStdString();
 
-            m_info.m_path = QObject::tr("Plugins/C++/Object/Detection").toStdString();
+            m_info.m_path = QObject::tr("Plugins/C++/Detection").toStdString();
             m_info.m_iconPath = "Icon/icon.png";
             m_info.m_version = "1.1.0";
             m_info.m_authors = "Andrew G. Howard, Menglong Zhu, Bo Chen, Dmitry Kalenichenko, Weijun Wang, Tobias Weyand, Marco Andreetto, Hartwig Adam";
