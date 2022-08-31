@@ -1,18 +1,16 @@
 #include "MobileNetSSD.h"
-#include "Graphics/CGraphicsLayer.h"
+#include "IO/CObjectDetectionIO.h"
 
 CMobileNetSSD::CMobileNetSSD() : COcvDnnProcess()
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>();
-    addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CBlobMeasureIO>());
+    addOutput(std::make_shared<CObjectDetectionIO>());
 }
 
 CMobileNetSSD::CMobileNetSSD(const std::string &name, const std::shared_ptr<CMobileNetSSDParam> &pParam): COcvDnnProcess(name)
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>(*pParam);
-    addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CBlobMeasureIO>());
+    addOutput(std::make_shared<CObjectDetectionIO>());
 }
 
 size_t CMobileNetSSD::getProgressSteps()
@@ -85,15 +83,7 @@ void CMobileNetSSD::run()
             readClassNames();
             generateColors();
         }
-
-        int size = getNetworkInputSize();
-        double scaleFactor = getNetworkInputScaleFactor();
-        cv::Scalar mean = getNetworkInputMean();
-        auto inputBlob = cv::dnn::blobFromImage(imgSrc, scaleFactor, cv::Size(size,size), mean, false, false);
-        m_net.setInput(inputBlob);
-
-        auto netOutNames = getOutputsNames();
-        m_net.forward(netOutputs, netOutNames);
+        forward(imgSrc, netOutputs);
     }
     catch(cv::Exception& e)
     {
@@ -104,14 +94,6 @@ void CMobileNetSSD::run()
     emit m_signalHandler->doProgress();
     manageOutput(netOutputs[0]);
     emit m_signalHandler->doProgress();
-
-    // Trick to overcome OpenCV issue around CUDA context and multithreading
-    // https://github.com/opencv/opencv/issues/20566
-    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
-    {
-        m_sign *= -1;
-        m_bNewInput = false;
-    }
 }
 
 void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
@@ -125,14 +107,8 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
     auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     CMat imgSrc = pInput->getImage();
 
-    //Graphics output
-    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsOutput>(getOutput(1));
-    pGraphicsOutput->setNewLayer(getName());
-    pGraphicsOutput->setImageIndex(0);
-
-    //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CBlobMeasureIO>(getOutput(2));
-    pMeasureOutput->clearData();
+    auto objDetectIOPtr = std::dynamic_pointer_cast<CObjectDetectionIO>(getOutput(1));
+    objDetectIOPtr->init(getName(), 0);
 
     for(int i=0; i<dnnOutput.size[2]; i++)
     {
@@ -159,23 +135,8 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
 
             //Retrieve class label
             std::string className = classId < m_classNames.size() ? m_classNames[classId] : "unknown " + std::to_string(classId);
-            std::string label = className + " : " + std::to_string(confidence);
-            CGraphicsTextProperty textProperty;
-            textProperty.m_color = m_colors[classId];
-            textProperty.m_fontSize = 8;
-            pGraphicsOutput->addText(label, left + 5, top + 5, textProperty);
 
-            //Create rectangle graphics of bbox
-            CGraphicsRectProperty rectProperty;
-            rectProperty.m_category = className;
-            rectProperty.m_penColor = m_colors[classId];
-            auto graphicsBox = pGraphicsOutput->addRectangle(left, top, width, height, rectProperty);
-
-            //Store values to be shown in results table
-            std::vector<CObjectMeasure> results;
-            results.emplace_back(CObjectMeasure(CMeasure(CMeasure::CUSTOM, QObject::tr("Confidence").toStdString()), confidence, graphicsBox->getId(), className));
-            results.emplace_back(CObjectMeasure(CMeasure::Id::BBOX, {left, top, width, height}, graphicsBox->getId(), className));
-            pMeasureOutput->addObjectMeasures(results);
+            objDetectIOPtr->addObject(className, confidence, left, top, width, height, m_colors[classId]);
         }
     }
 }
