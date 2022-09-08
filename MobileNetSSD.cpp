@@ -136,7 +136,7 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
             //Retrieve class label
             std::string className = classId < m_classNames.size() ? m_classNames[classId] : "unknown " + std::to_string(classId);
 
-            objDetectIOPtr->addObject(className, confidence, left, top, width, height, m_colors[classId]);
+            objDetectIOPtr->addObject(i, className, confidence, left, top, width, height, m_colors[classId]);
         }
     }
 }
