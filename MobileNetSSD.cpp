@@ -59,6 +59,13 @@ void CMobileNetSSD::run()
     pParam->m_modelFile = pluginDir + "/Model/mobileNetSSD.caffemodel";
     pParam->m_labelsFile = pluginDir + "/Model/pascalVoc0712_names.txt";
 
+    if (!Utils::File::isFileExist(pParam->m_modelFile))
+    {
+        std::cout << "Downloading model..." << std::endl;
+        std::string downloadUrl = Utils::Plugin::getModelHubUrl() + "/" + m_name + "/mobileNetSSD.caffemodel";
+        download(downloadUrl, pParam->m_modelFile);
+    }
+
     CMat imgSrc;
     CMat imgOrigin = pInput->getImage();
     std::vector<cv::Mat> netOutputs;
