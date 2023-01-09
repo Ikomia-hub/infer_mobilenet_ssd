@@ -1,1 +1,3 @@
-MobileNetSSD.pro.user
+infer_mobilenet_ssd.pro.user
+CMakeLists.txt.user
+build
