@@ -1,16 +1,15 @@
 #include "MobileNetSSD.h"
 #include "IO/CObjectDetectionIO.h"
 
-CMobileNetSSD::CMobileNetSSD() : COcvDnnProcess()
+CMobileNetSSD::CMobileNetSSD() : COcvDnnProcess(), CObjectDetectionTask()
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>();
-    addOutput(std::make_shared<CObjectDetectionIO>());
 }
 
-CMobileNetSSD::CMobileNetSSD(const std::string &name, const std::shared_ptr<CMobileNetSSDParam> &pParam): COcvDnnProcess(name)
+CMobileNetSSD::CMobileNetSSD(const std::string &name, const std::shared_ptr<CMobileNetSSDParam> &pParam)
+    : COcvDnnProcess(), CObjectDetectionTask(name)
 {
     m_pParam = std::make_shared<CMobileNetSSDParam>(*pParam);
-    addOutput(std::make_shared<CObjectDetectionIO>());
 }
 
 size_t CMobileNetSSD::getProgressSteps()
@@ -47,11 +46,14 @@ void CMobileNetSSD::run()
     auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     auto pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(m_pParam);
 
-    if(pInput == nullptr || pParam == nullptr)
+    if (pInput == nullptr)
+        throw CException(CoreExCode::INVALID_PARAMETER, "Invalid image input", __func__, __FILE__, __LINE__);
+
+    if (pParam == nullptr)
         throw CException(CoreExCode::INVALID_PARAMETER, "Invalid parameters", __func__, __FILE__, __LINE__);
 
-    if(pInput->isDataAvailable() == false)
-        throw CException(CoreExCode::INVALID_PARAMETER, "Empty image", __func__, __FILE__, __LINE__);
+    if (pInput->isDataAvailable() == false)
+        throw CException(CoreExCode::INVALID_PARAMETER, "Source image is empty", __func__, __FILE__, __LINE__);
 
     //Force model files path
     std::string pluginDir = Utils::Plugin::getCppPath() + "/" + Utils::File::conformName(QString::fromStdString(m_name)).toStdString();
@@ -82,17 +84,16 @@ void CMobileNetSSD::run()
     {
         if(m_net.empty() || pParam->m_bUpdate)
         {
-            m_net = readDnn();
+            m_net = readDnn(pParam);
             if(m_net.empty())
                 throw CException(CoreExCode::INVALID_PARAMETER, "Failed to load network", __func__, __FILE__, __LINE__);
 
             pParam->m_bUpdate = false;
-            readClassNames();
-            generateColors();
+            readClassNames(pParam->m_labelsFile);
         }
-        forward(imgSrc, netOutputs);
+        forward(imgSrc, netOutputs, pParam);
     }
-    catch(cv::Exception& e)
+    catch(std::exception& e)
     {
         throw CException(CoreExCode::INVALID_PARAMETER, e.what(), __func__, __FILE__, __LINE__);
     }
@@ -105,17 +106,12 @@ void CMobileNetSSD::run()
 
 void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
 {
-    forwardInputImage();
-
     // Network produces output blob with a shape 1x1xNx7 where N is a number of
     // detections and an every detection is a vector of values
     // [batchId, classId, confidence, left, top, right, bottom]
     auto pParam = std::dynamic_pointer_cast<CMobileNetSSDParam>(m_pParam);
     auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     CMat imgSrc = pInput->getImage();
-
-    auto objDetectIOPtr = std::dynamic_pointer_cast<CObjectDetectionIO>(getOutput(1));
-    objDetectIOPtr->init(getName(), 0);
 
     for(int i=0; i<dnnOutput.size[2]; i++)
     {
@@ -139,23 +135,7 @@ void CMobileNetSSD::manageOutput(cv::Mat &dnnOutput)
             float bottom = dnnOutput.at<float>(bottomIndex) * imgSrc.rows;
             float width = right - left + 1;
             float height = bottom - top + 1;
-
-            //Retrieve class label
-            std::string className = classId < m_classNames.size() ? m_classNames[classId] : "unknown " + std::to_string(classId);
-
-            objDetectIOPtr->addObject(i, className, confidence, left, top, width, height, m_colors[classId]);
+            addObject(i, classId, confidence, left, top, width, height);
         }
-    }
-}
-
-void CMobileNetSSD::generateColors()
-{
-    //Random colors
-    for(size_t i=0; i<m_classNames.size(); ++i)
-    {
-        m_colors.push_back({ (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
-                             (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
-                             (uchar)((double)std::rand() / (double)RAND_MAX * 255.0),
-                           });
     }
 }
