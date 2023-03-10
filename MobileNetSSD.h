@@ -3,8 +3,9 @@
 
 #include "MobileNetSSDGlobal.h"
 #include "Process/OpenCV/dnn/COcvDnnProcess.h"
+#include "Task/CObjectDetectionTask.h"
 #include "Widget/OpenCV/dnn/COcvWidgetDnnCore.h"
-#include "CPluginProcessInterface.hpp"
+#include "Core/CPluginProcessInterface.hpp"
 
 //------------------------------//
 //----- CMobileNetSSDParam -----//
@@ -42,7 +43,7 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSDParam: public COcvDnnProcessParam
 //-------------------------//
 //----- CMobileNetSSD -----//
 //-------------------------//
-class MOBILENETSSDSHARED_EXPORT CMobileNetSSD: public COcvDnnProcess
+class MOBILENETSSDSHARED_EXPORT CMobileNetSSD: public COcvDnnProcess, public CObjectDetectionTask
 {
     public:
 
@@ -59,11 +60,6 @@ class MOBILENETSSDSHARED_EXPORT CMobileNetSSD: public COcvDnnProcess
     private:
 
         void        manageOutput(cv::Mat &dnnOutput);
-        void        generateColors();
-
-    private:
-
-        std::vector<CColor> m_colors;
 };
 
 //--------------------------------//
